@@ -5,9 +5,9 @@ Vagrant.configure("2") do |config|
 
   nodes = {
     "cp1"     => { host: "192.168.56.10", bridge: "192.168.1.50" },
-    "worker1" => { host: "192.168.56.21", bridge: "192.168.1.61" },
-    "worker2" => { host: "192.168.56.22", bridge: "192.168.1.62" },
-    "minio"   => { host: "192.168.56.30", bridge: "192.168.1.70" }
+    "worker1" => { host: "192.168.56.11", bridge: "192.168.1.51" },
+    "worker2" => { host: "192.168.56.12", bridge: "192.168.1.52" }
+    #"minio"   => { host: "192.168.56.30", bridge: "192.168.1.70" }
   }
 
   BRIDGE_IFACE = "wlp0s20f3"
