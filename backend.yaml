@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: python:3.9-slim
+        command:
+          - python
+          - -c
+          - |
+            import http.server, socketserver, os
+            PORT = 8000
+            Handler = http.server.SimpleHTTPRequestHandler
+            class MyHandler(Handler):
+                def do_GET(self):
+                    self.send_response(200)
+                    self.send_header('Content-type', 'text/plain')
+                    self.end_headers()
+                    self.wfile.write(f"Hello from Backend! Pod: {os.urandom(4).hex()}".encode())
+            socketserver.TCPServer.allow_reuse_address = True
+            with socketserver.TCPServer(("", PORT), MyHandler) as httpd:
+                httpd.serve_forever()
+        ports:
+        - containerPort: 8000
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+spec:
+  selector:
+    app: backend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: LoadBalancer
