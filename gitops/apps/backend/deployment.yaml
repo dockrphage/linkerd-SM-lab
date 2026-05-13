@@ -17,6 +17,12 @@ spec:
       containers:
       - name: backend
         image: python:3.9-slim
+        env:
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secret
+                  key: API_KEY
         command:
           - python
           - -c
