@@ -1,4 +1,6 @@
 #!/bin/bash
+# k3s-agent-setup.sh
+# Usage: ./k3s-agent-setup.sh <node-ip> <server-ip> <token>
 set -e
 
 NODE_IP="$1"

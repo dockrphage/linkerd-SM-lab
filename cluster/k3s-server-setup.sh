@@ -1,4 +1,6 @@
 #!/bin/bash
+# k3s-server-setup.sh
+# Usage: ./k3s-server-setup.sh <node-ip>
 set -e
 
 NODE_IP="$1"

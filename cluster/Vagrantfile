@@ -1,0 +1,72 @@
+Vagrant.configure("2") do |config|
+  # Disable vbguest auto-install
+  config.vbguest.auto_update = false
+  config.vbguest.no_install = true
+
+  nodes = {
+    "cp1"     => { host: "192.168.56.10", bridge: "192.168.1.50" },
+    "worker1" => { host: "192.168.56.11", bridge: "192.168.1.51" },
+    "worker2" => { host: "192.168.56.12", bridge: "192.168.1.52" }
+    # "minio"   => { host: "192.168.56.30", bridge: "192.168.1.70" }
+  }
+
+  BRIDGE_IFACE = "wlp0s20f3"
+  config.vm.box = "ubuntu/jammy64"
+
+  nodes.each do |name, nets|
+    config.vm.define name do |node|
+      node.vm.hostname = name
+
+      # Host-only network
+      node.vm.network "private_network",
+        ip: nets[:host],
+        virtualbox__promiscuous_mode: "allow-all"
+
+      # Bridged network (static IP)
+      node.vm.network "public_network",
+        ip: nets[:bridge],
+        bridge: BRIDGE_IFACE
+
+      # MinIO extra network (commented out as per your original file)
+      # if name == "minio"
+      #   node.vm.network "private_network",
+      #     ip: "10.10.10.12",
+      #     virtualbox__promiscuous_mode: "allow-all"
+      # end
+
+      node.vm.provider "virtualbox" do |vb|
+        vb.memory = (name == "cp1" || name == "minio") ? 2048 : 1536
+        vb.cpus   = (name == "cp1" || name == "minio") ? 2 : 1
+      end
+
+      node.vm.synced_folder ".", "/vagrant"
+
+      # Provisioning steps
+      node.vm.provision "shell", inline: <<-SHELL
+        # 1. Enable Password Authentication
+        echo "Configuring SSH for password login..."
+        sudo sed -i 's/PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config.d/60-cloudimg-settings.conf
+        echo 'vagrant:Passwd123' | sudo chpasswd
+        sudo systemctl restart ssh
+
+        # 2. Copy Scripts and Set Permissions
+        # Ensure scripts exist in the Vagrant directory before copying
+        if [ -f "/vagrant/k3s-server-setup.sh" ]; then
+          cp /vagrant/k3s-server-setup.sh /home/vagrant/
+          chmod 744 /home/vagrant/k3s-server-setup.sh
+          chown vagrant:vagrant /home/vagrant/k3s-server-setup.sh
+        else
+          echo "Warning: k3s-server-setup.sh not found in /vagrant"
+        fi
+
+        if [ -f "/vagrant/k3s-agent-setup.sh" ]; then
+          cp /vagrant/k3s-agent-setup.sh /home/vagrant/
+          chmod 744 /home/vagrant/k3s-agent-setup.sh
+          chown vagrant:vagrant /home/vagrant/k3s-agent-setup.sh
+        else
+          echo "Warning: k3s-agent-setup.sh not found in /vagrant"
+        fi
+      SHELL
+    end
+  end
+end
